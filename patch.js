@@ -181,7 +181,7 @@ total += patchFile('main.js', [
   },
 ]);
 
-// 8. src/services/auth-service.js
+// 8. src/services/auth-service.js — disable all backend communication
 total += patchFile('src/services/auth-service.js', [
   {
     regex: /ipcMain\.handle\('verify-invite-code', async \(event, \{ code, apiUrl \}\) => \{[\s\S]*?\n  \}\);/,
@@ -190,6 +190,61 @@ total += patchFile('src/services/auth-service.js', [
   {
     regex: /ipcMain\.handle\('check-activation', async \(\) => \{[\s\S]*?\n  \}\);/,
     to: `ipcMain.handle('check-activation', async () => {\n    return { valid: true };\n  });`
+  },
+  // disable report-usage (no-op)
+  {
+    regex: /ipcMain\.handle\('report-usage', async \(event, data\) => \{[\s\S]*?\n  \}\);/,
+    to: `ipcMain.handle('report-usage', async (event, data) => {\n    return { success: true };\n  });`
+  },
+  // disable report-task-log (no-op)
+  {
+    regex: /ipcMain\.handle\('report-task-log', async \(event, data\) => \{[\s\S]*?\n  \}\);/,
+    to: `ipcMain.handle('report-task-log', async (event, data) => {\n    return { success: true };\n  });`
+  },
+  // disable report-event (no-op)
+  {
+    regex: /ipcMain\.handle\('report-event', async \(event, \{ type, data \}\) => \{[\s\S]*?\n  \}\);/,
+    to: `ipcMain.handle('report-event', async (event, { type, data }) => {\n    return { success: true };\n  });`
+  },
+  // disable unified-report (no-op)
+  {
+    regex: /ipcMain\.handle\('unified-report', async \(event, data\) => \{[\s\S]*?\n  \}\);/,
+    to: `ipcMain.handle('unified-report', async (event, data) => {\n    return { success: true };\n  });`
+  },
+  // disable get-server-usage (return empty)
+  {
+    regex: /ipcMain\.handle\('get-server-usage', async \(\) => \{[\s\S]*?\n  \}\);/,
+    to: `ipcMain.handle('get-server-usage', async () => {\n    return { success: true, data: [] };\n  });`
+  },
+  // disable check-connection (always connected)
+  {
+    regex: /ipcMain\.handle\('check-connection', async \(\) => \{[\s\S]*?\n  \}\);/,
+    to: `ipcMain.handle('check-connection', async () => {\n    return { connected: true, region: 'local', lastCheck: Date.now(), ip: '127.0.0.1' };\n  });`
+  },
+  // disable startup heartbeat/statusCheck/dataFlush/pushEvent
+  {
+    regex: /\/\/ .*启动时[\s\S]*?setTimeout\(async \(\) => \{[\s\S]*?\}, 3000\);/,
+    to: `// all backend communication disabled`
+  },
+  // disable recordAppClose
+  {
+    regex: /function recordAppClose\(\) \{[\s\S]*?\}/,
+    to: `function recordAppClose() {}`
+  },
+  // disable sendBundledReport (make it no-op)
+  {
+    regex: /async function sendBundledReport\(includeHeartbeat\) \{[\s\S]*?\n\}/,
+    to: `async function sendBundledReport(includeHeartbeat) { return { success: true }; }`
+  },
+  // disable flushEvents (make it no-op)
+  {
+    regex: /async function flushEvents\(\) \{[\s\S]*?\n\}/,
+    to: `async function flushEvents() {}`
+  },
+  // disable pushEvent (make it no-op)
+  {
+    regex: /function pushEvent\(type, data\) \{[\s\S]*?\n\}/,
+    to: `function pushEvent(type, data) {}`
   },
 ]);
 
