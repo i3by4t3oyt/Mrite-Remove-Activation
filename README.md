@@ -36,7 +36,8 @@
 patch.js       — 补丁逻辑
 README.md      — 本文件
 ```
-##新更新说明
+## 新更新说明
+```
 现在会额外禁用：
   sendBundledReport — 心跳/用量上报（变成空操作）
   flushEvents — 事件队列发送
@@ -46,3 +47,4 @@ README.md      — 本文件
   get-server-usage / check-connection — 服务端查询
   启动时的 setTimeout 块（heartbeat/statusCheck/dataFlush）— 全部不再启动
   改完后软件不会跟 mirte.rzna.cloud 有任何通信，机器码也不会发出去。
+```
