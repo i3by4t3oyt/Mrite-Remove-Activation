@@ -35,13 +35,14 @@ try {
 }
 
 // ──────────────────────────────────────────
-// 备份
+// 备份 & 还原（始终从原始版本打补丁）
 // ──────────────────────────────────────────
 if (!fs.existsSync(backupPath)) {
   log('备份 → app_original.asar');
   fs.copyFileSync(asarPath, backupPath);
 } else {
-  log('备份已存在，跳过');
+  log('从原始备份还原（确保补丁基于未修改版本）');
+  fs.copyFileSync(backupPath, asarPath);
 }
 
 // ──────────────────────────────────────────
@@ -179,6 +180,11 @@ total += patchFile('main.js', [
     from: 'applySecurity(mainWindow);',
     to: '// 安全加固已禁用\n  // applySecurity(mainWindow);'
   },
+  // fix: prevent "Cannot access mainWindow before initialization" on second-instance
+  {
+    from: "app.on('second-instance', () => {\n  if (mainWindow) {\n    if (mainWindow.isMinimized()) mainWindow.restore();\n    mainWindow.focus();\n  }\n});",
+    to: "app.on('second-instance', () => {\n  try {\n    if (mainWindow) {\n      if (mainWindow.isMinimized()) mainWindow.restore();\n      mainWindow.focus();\n    }\n  } catch(e) {}\n});"
+  },
 ]);
 
 // 8. src/services/auth-service.js — disable all backend communication
@@ -228,7 +234,7 @@ total += patchFile('src/services/auth-service.js', [
   },
   // disable recordAppClose
   {
-    regex: /function recordAppClose\(\) \{[\s\S]*?\}/,
+    regex: /function recordAppClose\(\) \{\n  pushEvent\([^)]*\);\n\}/,
     to: `function recordAppClose() {}`
   },
   // disable sendBundledReport (make it no-op)
